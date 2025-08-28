@@ -38,7 +38,7 @@ export default function ImageUploadPage() {
       const formData = new FormData()
       formData.append("image", selectedFile)
 
-      const response = await fetch("/api/upload", {
+      const response = await fetch("http://localhost:8000/api/upload", {
         method: "POST",
         body: formData,
       })
