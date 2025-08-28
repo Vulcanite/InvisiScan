@@ -1,8 +1,9 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import os
-from pathlib import Path
+import base64
+from PIL import Image
+import io
 
 app = FastAPI()
 
@@ -14,21 +15,39 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
-
 @app.post("/api/upload")
 async def upload_image(image: UploadFile = File(...)):
     try:
         if not image.content_type.startswith("image/"):
             raise HTTPException(status_code=400, detail="Invalid file type. Please upload an image.")
 
-        file_path = UPLOAD_DIR / image.filename
-        with open(file_path, "wb") as f:
-            content = await image.read()
-            f.write(content)
+        content = await image.read()
 
-        return JSONResponse({"message": "Upload successful!", "filename": image.filename})
+        pil_image = Image.open(io.BytesIO(content))
+        width, height = pil_image.size
+
+        img_base64 = base64.b64encode(content).decode('utf-8')
+
+        processing_data = {
+            "original_filename": image.filename,
+            "image_size": {
+                "width": width,
+                "height": height
+            },
+            "file_size": len(content),
+            "format": pil_image.format,
+            "mode": pil_image.mode,
+            "processing_status": "completed"
+        }
+
+        return JSONResponse({
+            "message": "Upload and processing successful!",
+            "data": processing_data,
+            "processed_image": {
+                "base64": img_base64,
+                "content_type": image.content_type
+            }
+        })
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
