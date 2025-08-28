@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload, X, CheckCircle, AlertCircle, Info } from "lucide-react"
+import { Upload, X, CheckCircle, AlertCircle, Info, Download } from "lucide-react"
 
 interface ProcessingData {
   original_filename: string;
@@ -82,6 +82,25 @@ export default function ImageUploadPage() {
     } finally {
       setUploading(false)
     }
+  }
+
+  const handleDownload = () => {
+    if (!processedImage || !processedData) return
+
+    // Create a temporary anchor element to trigger download
+    const link = document.createElement('a')
+    link.href = processedImage
+    
+    // Generate filename for the processed image
+    const originalName = processedData.original_filename
+    const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName
+    const extension = processedData.format.toLowerCase()
+    const downloadFilename = `${nameWithoutExt}_processed.${extension}`
+    
+    link.download = downloadFilename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   const clearSelection = () => {
@@ -180,7 +199,18 @@ export default function ImageUploadPage() {
                 {/* Processed Image */}
                 {processedImage && (
                   <div>
-                    <h3 className="text-sm font-medium mb-2">Processed Image:</h3>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-medium">Processed Image:</h3>
+                      <Button 
+                        onClick={handleDownload} 
+                        variant="outline" 
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download
+                      </Button>
+                    </div>
                     <img
                       src={processedImage}
                       alt="Processed"
