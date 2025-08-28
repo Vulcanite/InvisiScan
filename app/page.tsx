@@ -146,7 +146,7 @@ export default function ImageUploadPage() {
 
               {/* Upload Button */}
               <Button onClick={handleUpload} disabled={!selectedFile || uploading} className="w-full">
-                {uploading ? "Uploading..." : "Upload Image"}
+                {uploading ? "Processing..." : "Upload Image"}
               </Button>
 
               {/* Status Messages */}
