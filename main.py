@@ -22,11 +22,19 @@ async def upload_image(image: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="Invalid file type. Please upload an image.")
 
         content = await image.read()
-
         pil_image = Image.open(io.BytesIO(content))
-        width, height = pil_image.size
+        # Create a clean copy without EXIF data
+        clean_image = Image.new(pil_image.mode, pil_image.size)
+        clean_image.putdata(list(pil_image.getdata()))
+    
+        # Save to BytesIO without metadata - this strips the exif data
+        output = io.BytesIO()
+        clean_image.save(output, format=pil_image.format, optimize=True)
 
-        img_base64 = base64.b64encode(content).decode('utf-8')
+        output.seek(0)
+        
+        width, height = pil_image.size
+        img_base64 = base64.b64encode(output.read()).decode('utf-8')
 
         processing_data = {
             "original_filename": image.filename,
