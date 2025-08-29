@@ -47,6 +47,7 @@ export default function DataScanPage() {
   const [message, setMessage] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [inputFormat, setInputFormat] = useState<File | string | null>(null)
 
   const isImageFile = (file: File) => {
     return file.type.startsWith('image/')
@@ -61,6 +62,9 @@ export default function DataScanPage() {
   }
   const isWordFile = (file: File) => {
     return file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || file.type === "application/msword"
+  }
+  const isTextFile = (file: File) => {
+    return file.type.startsWith("text/") || file.name.toLowerCase().endsWith(".txt")
   }
   
   const resetState = () => {
@@ -98,10 +102,25 @@ export default function DataScanPage() {
         const { value } = await mammoth.extractRawText({ arrayBuffer })
         setInputData(value.trim())
         setPreview(value.trim())
+        setInputFormat(file)
         //setPreview(null)
 
         if (textareaRef.current) textareaRef.current.value = ""
-    } else {
+    } else if (isTextFile(file)) {
+        setInputType("text") // treat as "text" input type
+        resetState()
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          const textContent = (event.target?.result as string)?.trim()
+          if (textContent) {
+            setInputData(textContent) 
+            setPreview(textContent) 
+            setInputFormat(file)
+          }
+        }
+        reader.readAsText(file)
+    }
+      else {
         alert("Please select an image or Word document")
         event.target.value = ""
   }
@@ -360,10 +379,10 @@ export default function DataScanPage() {
                   </motion.div>
               )}
 
-              {/* Word File Info */}
-              {inputType === 'text' && inputData instanceof File && (
+              {/* Text Document Preview */}
+              {inputType === 'text' && inputFormat instanceof File && (
                 <div className="flex items-center justify-between">
-                  <p className="text-sm">📄 {inputData.name}</p>
+                  <p className="text-sm">📄 {inputFormat.name}</p>
                   <Button 
                     onClick={handleDownload} 
                     variant="outline" 
