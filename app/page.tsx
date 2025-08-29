@@ -36,7 +36,7 @@ interface ApiResponse {
 type InputType = 'image' | 'text';
 
 export default function DataScanPage() {
-  const [inputData, setInputData] = useState<File | string | null>(null)
+  const [inputData, setInputData] = useState<File | Blob | string | null>(null)
   const [inputType, setInputType] = useState<InputType | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle")
@@ -156,9 +156,10 @@ export default function DataScanPage() {
         // Check if pasted item is an image
         if (item.type.startsWith('image/')) {
           event.preventDefault()
-          const file = item.getAsFile()
-          
-          if (file) {
+          const blob = item.getAsFile()
+
+          if (blob) {
+            const file = new File([blob], "pasted-image.png", { type: blob.type })
             setInputData(file)
             setInputType('image')
             resetState()
@@ -170,7 +171,6 @@ export default function DataScanPage() {
             }
             reader.readAsDataURL(file)
 
-            // Clear textarea
             if (textareaRef.current) {
               textareaRef.current.value = ""
             }
@@ -192,15 +192,14 @@ export default function DataScanPage() {
 
     try {
       const formData = new FormData()
-      
-      if (inputType === 'image' && inputData instanceof File) {
-        formData.append("image", inputData)
+      if (inputType === 'image') {
+        if (inputData instanceof File || inputData instanceof Blob) {
+          const filename = inputData instanceof File ? inputData.name : "pasted-image.png"
+          formData.append("image", inputData, filename)
+        }
       } else if (inputType === 'text' && typeof inputData === 'string') {
         formData.append("text_input", inputData.trim())
-      // } else if (inputType === "text" && inputData instanceof File) {
-      //     // Word document upload
-      //     formData.append("document", inputData)
-      // }
+      }
 
       const response = await fetch("http://localhost:8000/api/scan", {
         method: "POST",
@@ -211,11 +210,11 @@ export default function DataScanPage() {
         const result: ApiResponse = await response.json()
         setUploadStatus("success")
         setProcessedData(result.data)
-        
+
         if (result.processed_image) {
           setProcessedImage(`data:${result.processed_image.content_type};base64,${result.processed_image.base64}`)
         }
-        
+
         if (result.redacted_text) {
           setRedactedText(result.redacted_text)
         }
@@ -223,11 +222,11 @@ export default function DataScanPage() {
         if (result.message) {
           setMessage(result.message)
         }
-
       } else {
         setUploadStatus("error")
       }
-    }} catch (error) {
+
+    } catch (error) {
       console.error("Scan failed:", error)
       setUploadStatus("error")
     } finally {
@@ -235,9 +234,9 @@ export default function DataScanPage() {
     }
   }
 
+
   const handleDownload = () => {
     if (inputType === 'image' && processedImage && processedData) {
-      // Download processed image
       const link = document.createElement('a')
       link.href = processedImage
       
@@ -251,7 +250,6 @@ export default function DataScanPage() {
       link.click()
       document.body.removeChild(link)
     } else if (inputType === 'text' && redactedText) {
-      // Download redacted text
       const blob = new Blob([redactedText], { type: 'text/plain' })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
