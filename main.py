@@ -34,8 +34,39 @@ def initialize_presidio():
         nlp_engine = nlp_engine_provider.create_engine()
         
         # Initialize analyzer and anonymizer
+        #analyzer = AnalyzerEngine(nlp_engine=nlp_engine)
+        #anonymizer = AnonymizerEngine()
+
+        hcn_pattern = Pattern(
+        name="HCN Pattern",
+        regex=r"\bHCN[-\s]?\d{3}[-\s]?\d{3}[-\s]?\d{3}\b",
+        score=0.9,
+        )
+
+        health_id_recognizer = PatternRecognizer(
+            supported_entity="HEALTH_INSURANCE_ID",
+            patterns=[hcn_pattern]
+        )
+
+        #US SSN fallback
+        ssn_pattern = Pattern(
+            name="US_SSN_FALLBACK",
+            regex=r"\b\d{3}-\d{2}-\d{4}\b",
+            score=0.95
+        )
+        ssn_recognizer = PatternRecognizer(
+            supported_entity="US_SSN",
+            patterns=[ssn_pattern]
+        )
+
+
+        # Analyzer with custom recognizers
         analyzer = AnalyzerEngine(nlp_engine=nlp_engine)
+        analyzer.registry.add_recognizer(health_id_recognizer)
+        analyzer.registry.add_recognizer(ssn_recognizer)
+        #analyzer.registry.add_recognizer(address_recognizer)
         anonymizer = AnonymizerEngine()
+
         
         return analyzer, anonymizer
     except Exception as e:
@@ -72,10 +103,20 @@ def detect_and_redact_pii(text: str) -> dict:
             "NRP",  # National Registration Number
             "MEDICAL_LICENSE",
             "URL",
-            "US_SSN",  # US Social Security Number
             "US_DRIVER_LICENSE",
             "US_PASSPORT",
-            "CRYPTO"
+            "CRYPTO",
+            "US_ITIN",
+            "US_BANK_NUMBER",
+            "US_SSN",
+            "UK_NHS",
+            "UK,NINO",
+            "SG_NRIC_FIN",
+            "SG_UEN",
+            "IN_PAN",
+            "IN_PASSPORT",
+            "IN_VOTER",
+            "IN_VEHICLE_REGISTRATION"
         ]
         
         # Analyze text for PII
@@ -84,6 +125,7 @@ def detect_and_redact_pii(text: str) -> dict:
             entities=entities_to_detect,
             language='en'
         )
+        
         
         # Anonymize/redact the detected PII
         anonymized_result = anonymizer.anonymize(
