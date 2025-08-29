@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Upload, X, CheckCircle, AlertCircle, Info, Download, Paperclip, Eye, Shield } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import mammoth from "mammoth"
 
 interface ProcessingData {
   original_filename?: string;
@@ -51,6 +52,17 @@ export default function DataScanPage() {
     return file.type.startsWith('image/')
   }
 
+  const isAllowedFile = (file: File) => {
+  const allowedWordTypes = [
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+    "application/msword", // .doc
+  ]
+    return file.type.startsWith("image/") || allowedWordTypes.includes(file.type)
+  }
+  const isWordFile = (file: File) => {
+    return file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || file.type === "application/msword"
+  }
+  
   const resetState = () => {
     setUploadStatus("idle")
     setProcessedData(null)
@@ -60,9 +72,10 @@ export default function DataScanPage() {
     setPreview(null)
   }
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (file && isImageFile(file)) {
+    if(!file) return
+    if (isImageFile(file)) {
       setInputData(file)
       setInputType('image')
       resetState()
@@ -78,10 +91,20 @@ export default function DataScanPage() {
       if (textareaRef.current) {
         textareaRef.current.value = ""
       }
-    } else if (file) {
-      alert('Please select an image file')
-      event.target.value = ""
-    }
+    } else if (isWordFile(file)) {
+        setInputType("text") // treat as "text" input type
+        resetState()
+        const arrayBuffer = await file.arrayBuffer()
+        const { value } = await mammoth.extractRawText({ arrayBuffer })
+        setInputData(value.trim())
+        setPreview(value.trim())
+        //setPreview(null)
+
+        if (textareaRef.current) textareaRef.current.value = ""
+    } else {
+        alert("Please select an image or Word document")
+        event.target.value = ""
+  }
   }
 
   const handleTextChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -155,7 +178,10 @@ export default function DataScanPage() {
         formData.append("image", inputData)
       } else if (inputType === 'text' && typeof inputData === 'string') {
         formData.append("text_input", inputData.trim())
-      }
+      // } else if (inputType === "text" && inputData instanceof File) {
+      //     // Word document upload
+      //     formData.append("document", inputData)
+      // }
 
       const response = await fetch("http://localhost:8000/api/scan", {
         method: "POST",
@@ -182,7 +208,7 @@ export default function DataScanPage() {
       } else {
         setUploadStatus("error")
       }
-    } catch (error) {
+    }} catch (error) {
       console.error("Scan failed:", error)
       setUploadStatus("error")
     } finally {
@@ -282,7 +308,7 @@ export default function DataScanPage() {
                 <input 
                   ref={fileInputRef}
                   type="file" 
-                  accept="image/*" 
+                  accept="image/*,.doc,.docx,.txt"
                   onChange={handleFileSelect} 
                   className="hidden" 
                   id="file-input" 
@@ -332,6 +358,22 @@ export default function DataScanPage() {
                       <X className="h-4 w-4" />
                     </Button>
                   </motion.div>
+              )}
+
+              {/* Word File Info */}
+              {inputType === 'text' && inputData instanceof File && (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm">📄 {inputData.name}</p>
+                  <Button 
+                    onClick={handleDownload} 
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download
+                  </Button>
+                </div>
               )}
 
               {/* Input Info */}
