@@ -48,7 +48,7 @@ def initialize_presidio():
             patterns=[hcn_pattern]
         )
 
-        #US SSN fallback
+        # US SSN fallback
         ssn_pattern = Pattern(
             name="US_SSN_FALLBACK",
             regex=r"\b\d{3}-\d{2}-\d{4}\b",
@@ -59,12 +59,25 @@ def initialize_presidio():
             patterns=[ssn_pattern]
         )
 
+        # US Address
+        address_pattern = Pattern(
+            name="US_ADDRESS",
+            regex=r'\d{1,6}\s+[\w\s\.-]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Court|Ct|Circle|Cir|Way|Terrace|Ter)\,?\s+'  # Street number + street name
+                    r'[\w\s]+\,?\s+'
+                    r'(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\s+'  # State abbreviation
+                    r'\d{5}(?:-\d{4})?',
+            score=0.9
+        )
+        address_recognizer = PatternRecognizer(
+            supported_entity="US_ADDRESS",
+            patterns=[address_pattern]
+        )
 
         # Analyzer with custom recognizers
         analyzer = AnalyzerEngine(nlp_engine=nlp_engine)
         analyzer.registry.add_recognizer(health_id_recognizer)
         analyzer.registry.add_recognizer(ssn_recognizer)
-        #analyzer.registry.add_recognizer(address_recognizer)
+        analyzer.registry.add_recognizer(address_recognizer)
         anonymizer = AnonymizerEngine()
 
         
@@ -103,12 +116,12 @@ def detect_and_redact_pii(text: str) -> dict:
             "NRP",  # National Registration Number
             "MEDICAL_LICENSE",
             "URL",
+            "US_SSN",  # US Social Security Number
             "US_DRIVER_LICENSE",
             "US_PASSPORT",
             "CRYPTO",
             "US_ITIN",
             "US_BANK_NUMBER",
-            "US_SSN",
             "UK_NHS",
             "UK,NINO",
             "SG_NRIC_FIN",
