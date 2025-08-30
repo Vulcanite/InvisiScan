@@ -11,7 +11,7 @@ from presidio_anonymizer import AnonymizerEngine
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 import torch
-import object_detection as OD
+from object_detection import ObjectDetector
 
 app = FastAPI()
 
@@ -314,26 +314,32 @@ async def scan_data(
     """
     try:
         if image and image.filename:
-            # Handle image processing (unchanged)
             if not image.content_type.startswith("image/"):
                 raise HTTPException(status_code=400, detail="Invalid file type. Please upload an image.")
 
             content = await image.read()
             pil_image = Image.open(io.BytesIO(content))
-            
-            # Create a clean copy without EXIF data
+
             clean_image = Image.new(pil_image.mode, pil_image.size)
             clean_image.putdata(list(pil_image.getdata()))
         
-            # Save to BytesIO without metadata
             output = io.BytesIO()
             clean_image.save(output, format=pil_image.format, optimize=True)
             output.seek(0)
-            
-            detections = OP.detect_cues("/uploads/*")
-            
+
+            try:
+                object_detector = ObjectDetector()  # Fixed: Added parentheses
+                img_rgb, detections = object_detector.detect_cues(pil_image)  # Pass the actual image, not a path
+                print(detections)
+            except Exception as e:
+                print(f"Object detection failed: {e}")
+                img_rgb = []  # Continue without object detection if it fails
+
             width, height = pil_image.size
-            img_base64 = base64.b64encode(output.read()).decode('utf-8')
+            buffered = io.BytesIO()
+            img_pil = Image.fromarray(img_rgb.astype("uint8"))
+            img_pil.save(buffered, format="PNG")
+            img_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
             processing_data = {
                 "original_filename": image.filename,
@@ -342,7 +348,8 @@ async def scan_data(
                 "format": pil_image.format,
                 "mode": pil_image.mode,
                 "processing_status": "completed",
-                "input_type": "image"
+                "input_type": "image",
+                "object_detections": detections  # Include detection results
             }
 
             return JSONResponse({
