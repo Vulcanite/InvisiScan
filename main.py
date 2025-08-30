@@ -109,7 +109,7 @@ class UnifiedPIIDetector:
                 patterns=address_patterns
             )
             
-            # Bank routing number pattern
+            # Bank routing number pattern regex
             routing_patterns = [
                 Pattern(name="ROUTING_NUMBER", regex=r'\b\d{9}\b', score=0.75)
             ]
