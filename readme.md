@@ -10,7 +10,7 @@ This app lets users upload an image, infers likely geo-location cues, and lets u
 
 ---
 
-~~## ✨ What it does (Basic Working)
+## ✨ What it does (Basic Working)
 
 ### 1. Upload
 User uploads a photo to `/api/scan/image`.
