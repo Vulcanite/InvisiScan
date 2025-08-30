@@ -11,6 +11,7 @@ from presidio_anonymizer import AnonymizerEngine
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 import torch
+import object_detection.py
 
 app = FastAPI()
 
@@ -38,7 +39,7 @@ class UnifiedPIIDetector:
         """Initialize both Presidio and DistilBERT models"""
         try:
             # Initialize DistilBERT NER
-            ner_model_name = "dslim/distilbert-NER"
+            ner_model_name = "Isotonic/distilbert_finetuned_ai4privacy_v2"
             self.ner_pipeline = pipeline(
                 "ner", 
                 model=ner_model_name, 
@@ -229,7 +230,7 @@ class UnifiedPIIDetector:
                     entities.append({
                         "start": int(entity['start']),
                         "end": int(entity['end']),
-                        "entity_type": f"NER_{entity['entity_group']}",
+                        "entity_type": f"{entity['entity_group']}",
                         "confidence": float(entity['score']),
                         "text": text[int(entity['start']):int(entity['end'])],
                         "source": "distilbert"
@@ -329,6 +330,7 @@ async def scan_data(
             clean_image.save(output, format=pil_image.format, optimize=True)
             output.seek(0)
             
+            detections = detect_cues(clean_image)
             width, height = pil_image.size
             img_base64 = base64.b64encode(output.read()).decode('utf-8')
 
