@@ -10,7 +10,7 @@ This app lets users upload an image, infers likely geo-location cues, and lets u
 
 ---
 
-## ✨ What it does (Basic Working)
+~~## ✨ What it does (Basic Working)
 
 ### 1. Upload
 User uploads a photo to `/api/scan/image`.
@@ -26,10 +26,10 @@ Oversized boxes are filtered (`MAX_AREA_FRAC`) to avoid masking huge regions.
 ### 4. Geo Coordinates (Optional)
 We convert the LLM's best named place into lat/lon via OpenStreetMap Nominatim (single result, throttled, user-agent set).
 
-### 5. Privacy Transform
+### 5. Privacy Transform~~
 
 **Masking:**
-- **EXIF scrub:** Losslessly rewrite the image to strip metadata (including GPS).
+- **EXIF scrub:** Strips the Metadata
 - **Smart pixelation:** Mask only the detected regions (rectangle or SAM-ready hooks), with adaptive block size to hamper OCR/landmark recovery.
 
 ### 6. Return
@@ -52,7 +52,7 @@ FastAPI
  │     └── GroundingDINO (open-vocab detection for LLM "cues")
  ├── /api/mask/image   [pixelate w/ EXIF scrub]
  ├── /api/scan/text    [PII text redaction: regex + spaCy]
- └── /api/health
+ └── /api/health       [simple health API]
 ```
 
 ### Key modules
@@ -60,7 +60,7 @@ FastAPI
 - `services/inferred_cues/grounding_dino_bounding_box.py` — Loads GroundingDINO; filters large boxes; draws/serializes outputs.
 - `services/masking/masking.py` — EXIF scrub + smart pixelation.
 - `services/masking/pii.py` — Regex-first PII with spaCy fallback for `/api/scan/text`.
-- `services/inferred_cues/inferred_cues_orchestrator.py` — Resizing, LLM → DINO cue plumbing, OSM lookup, final packing.
+- `services/inferred_cues/inferred_cues_orchestrator.py` — Resizing, LLM → DINO cue plumbing, OSM lookup, final packing. (service orchestration)
 
 ---
 
@@ -70,8 +70,7 @@ FastAPI
 - **Metadata minimized:** Images are re-encoded before transformation to strip EXIF.
 - **Targeted masking:** Only high-risk, LLM-nominated cues are masked to preserve utility while lowering re-identification risk.
 - **PII text guardrail:** Separate endpoint to redact sensitive text if captions/notes are processed.
-
----
+- **Gemini 2.5 APIs:** The billing-account version ensures user data remains private.
 
 ## 📦 Installation
 
