@@ -10,7 +10,13 @@ import mammoth from "mammoth"
 
 interface ProcessingData {
   original_filename?: string;
+  image_size?: {
+    width: number;
+    height: number;
+  };
+  file_size?: number;
   format?: string;
+  mode?: string;
   processing_status: string;
   input_type: 'image' | 'text';
 }
@@ -18,6 +24,9 @@ interface ProcessingData {
 interface DetectedLocation {
   lat: number;
   lng: number;
+  address?: string;
+  confidence: number;
+  source: string;
 }
 
 interface ApiResponse {
@@ -29,7 +38,7 @@ interface ApiResponse {
   };
   redacted_text?: string;
   analysis_summary?: string;
-  coords?: DetectedLocation;
+  detected_location?: DetectedLocation;
 }
 
 type TabType = 'text' | 'image';
@@ -138,7 +147,7 @@ export default function DataScanPage() {
       const formData = new FormData()
       formData.append("text_input", textInput.trim())
 
-      const response = await fetch("http://localhost:8000/api/scan", {
+      const response = await fetch("http://localhost:8000/api/scan/text", {
         method: "POST",
         body: formData,
       })
@@ -257,7 +266,7 @@ export default function DataScanPage() {
       const formData = new FormData()
       formData.append("image", imageFile, imageFile.name)
 
-      const response = await fetch("http://localhost:8000/api/scan", {
+      const response = await fetch("http://localhost:8000/api/scan/image", {
         method: "POST",
         body: formData,
       })
@@ -273,8 +282,8 @@ export default function DataScanPage() {
         }
 
         // Only set location if it exists in the response
-        if (result.coords) {
-          setDetectedLocation(result.coords)
+        if (result.detected_location) {
+          setDetectedLocation(result.detected_location)
         } else {
           setDetectedLocation(null)
         }
@@ -676,9 +685,25 @@ export default function DataScanPage() {
                         {/* Processing Data */}
                         {imageProcessedData && (
                           <div className="space-y-2">
-                            <h3 className="text-sm font-medium">Visual Cues Identified:</h3>
+                            <h3 className="text-sm font-medium">Analysis Information:</h3>
                             <div className="bg-muted p-3 rounded-lg text-sm space-y-1">
-
+                              {imageProcessedData.original_filename && (
+                                <p><span className="font-medium">Filename:</span> {imageProcessedData.original_filename}</p>
+                              )}
+                              {imageProcessedData.image_size && (
+                                <p><span className="font-medium">Dimensions:</span> {imageProcessedData.image_size.width} × {imageProcessedData.image_size.height}</p>
+                              )}
+                              {imageProcessedData.file_size && (
+                                <p><span className="font-medium">File Size:</span> {(imageProcessedData.file_size / 1024).toFixed(2)} KB</p>
+                              )}
+                              {imageProcessedData.format && (
+                                <p><span className="font-medium">Format:</span> {imageProcessedData.format}</p>
+                              )}
+                              {imageProcessedData.mode && (
+                                <p><span className="font-medium">Color Mode:</span> {imageProcessedData.mode}</p>
+                              )}
+                              <p><span className="font-medium">Input Type:</span> {imageProcessedData.input_type}</p>
+                              <p><span className="font-medium">Status:</span> <span className="text-green-600 capitalize">{imageProcessedData.processing_status}</span></p>
                             </div>
                           </div>
                         )}
@@ -698,8 +723,22 @@ export default function DataScanPage() {
                               <div className="p-3 bg-muted/50">
                                 <div className="flex justify-between items-start">
                                   <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <MapPin className="h-3 w-3 text-red-500" />
+                                      <span className="font-medium text-sm">
+                                        {detectedLocation.address || "Detected Location"}
+                                      </span>
+                                    </div>
                                     <div className="text-xs text-muted-foreground space-y-1">
                                       <div>📍 {detectedLocation.lat.toFixed(6)}, {detectedLocation.lng.toFixed(6)}</div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs">
+                                          {detectedLocation.source.replace('_', ' ')}
+                                        </span>
+                                        <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs">
+                                          {(detectedLocation.confidence * 100).toFixed(0)}% confidence
+                                        </span>
+                                      </div>
                                     </div>
                                   </div>
                                   <a
@@ -719,6 +758,7 @@ export default function DataScanPage() {
                                 <iframe
                                   src={`https://www.openstreetmap.org/export/embed.html?bbox=${detectedLocation.lng-0.01},${detectedLocation.lat-0.01},${detectedLocation.lng+0.01},${detectedLocation.lat+0.01}&layer=mapnik&marker=${detectedLocation.lat},${detectedLocation.lng}`}
                                   className="w-full h-full border-0"
+                                  title={`Map for ${detectedLocation.address || "Detected Location"}`}
                                   loading="lazy"
                                 />
                               </div>
