@@ -4,21 +4,20 @@ import type React from "react"
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload, X, CheckCircle, AlertCircle, Info, Download, Paperclip, Eye, Shield, FileText, ImageIcon } from "lucide-react"
+import { Upload, X, CheckCircle, AlertCircle, Info, Download, Paperclip, Eye, Shield, FileText, ImageIcon, MapPin, ExternalLink } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import mammoth from "mammoth"
 
 interface ProcessingData {
   original_filename?: string;
-  image_size?: {
-    width: number;
-    height: number;
-  };
-  file_size?: number;
   format?: string;
-  mode?: string;
   processing_status: string;
   input_type: 'image' | 'text';
+}
+
+interface DetectedLocation {
+  lat: number;
+  lng: number;
 }
 
 interface ApiResponse {
@@ -30,6 +29,7 @@ interface ApiResponse {
   };
   redacted_text?: string;
   analysis_summary?: string;
+  coords?: DetectedLocation;
 }
 
 type TabType = 'text' | 'image';
@@ -54,6 +54,7 @@ export default function DataScanPage() {
   const [processedImage, setProcessedImage] = useState<string | null>(null)
   const [imageProcessedData, setImageProcessedData] = useState<ProcessingData | null>(null)
   const [imageMessage, setImageMessage] = useState<string | null>(null)
+  const [detectedLocation, setDetectedLocation] = useState<DetectedLocation | null>(null)
   
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const textFileInputRef = useRef<HTMLInputElement>(null)
@@ -195,6 +196,7 @@ export default function DataScanPage() {
     setImageProcessedData(null)
     setProcessedImage(null)
     setImageMessage(null)
+    setDetectedLocation(null)
   }
 
   const handleImageFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -269,6 +271,13 @@ export default function DataScanPage() {
         if (result.processed_image) {
           setProcessedImage(`data:${result.processed_image.content_type};base64,${result.processed_image.base64}`)
         }
+
+        // Only set location if it exists in the response
+        if (result.coords) {
+          setDetectedLocation(result.coords)
+        } else {
+          setDetectedLocation(null)
+        }
       } else {
         setImageStatus("error")
       }
@@ -287,6 +296,7 @@ export default function DataScanPage() {
     setImageProcessedData(null)
     setImageMessage(null)
     setImageStatus("idle")
+    setDetectedLocation(null)
     
     if (imageFileInputRef.current) {
       imageFileInputRef.current.value = ""
@@ -341,7 +351,7 @@ export default function DataScanPage() {
               }`}
             >
               <ImageIcon className="h-4 w-4" />
-              Visual Privacy Protection
+              Visual Cues Detection
             </button>
           </div>
         </div>
@@ -496,10 +506,8 @@ export default function DataScanPage() {
                         {/* Processing Data */}
                         {textProcessedData && (
                           <div className="space-y-2">
-                            <h3 className="text-sm font-medium">Analysis Information:</h3>
+                            <h3 className="text-sm font-medium">Visual Cues: </h3>
                             <div className="bg-muted p-3 rounded-lg text-sm space-y-1">
-                              <p><span className="font-medium">Input Type:</span> {textProcessedData.input_type}</p>
-                              <p><span className="font-medium">Status:</span> <span className="text-green-600 capitalize">{textProcessedData.processing_status}</span></p>
                             </div>
                           </div>
                         )}
@@ -625,7 +633,7 @@ export default function DataScanPage() {
                 </Card>
 
                 {/* Image Results Card */}
-                {(processedImage || imageProcessedData) && (
+                {(processedImage || imageProcessedData || detectedLocation) && (
                   <motion.div
                     initial={{ opacity: 0, x: 50 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -668,25 +676,52 @@ export default function DataScanPage() {
                         {/* Processing Data */}
                         {imageProcessedData && (
                           <div className="space-y-2">
-                            <h3 className="text-sm font-medium">Analysis Information:</h3>
+                            <h3 className="text-sm font-medium">Visual Cues Identified:</h3>
                             <div className="bg-muted p-3 rounded-lg text-sm space-y-1">
-                              {imageProcessedData.original_filename && (
-                                <p><span className="font-medium">Filename:</span> {imageProcessedData.original_filename}</p>
-                              )}
-                              {imageProcessedData.image_size && (
-                                <p><span className="font-medium">Dimensions:</span> {imageProcessedData.image_size.width} × {imageProcessedData.image_size.height}</p>
-                              )}
-                              {imageProcessedData.file_size && (
-                                <p><span className="font-medium">File Size:</span> {(imageProcessedData.file_size / 1024).toFixed(2)} KB</p>
-                              )}
-                              {imageProcessedData.format && (
-                                <p><span className="font-medium">Format:</span> {imageProcessedData.format}</p>
-                              )}
-                              {imageProcessedData.mode && (
-                                <p><span className="font-medium">Color Mode:</span> {imageProcessedData.mode}</p>
-                              )}
-                              <p><span className="font-medium">Input Type:</span> {imageProcessedData.input_type}</p>
-                              <p><span className="font-medium">Status:</span> <span className="text-green-600 capitalize">{imageProcessedData.processing_status}</span></p>
+
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Detected Location */}
+                        {detectedLocation && (
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-sm font-medium flex items-center gap-2">
+                                <MapPin className="h-4 w-4" />
+                                Detected Geographic Location
+                              </h3>
+                            </div>
+                            
+                            <div className="border rounded-lg overflow-hidden">
+                              {/* Location Info Header */}
+                              <div className="p-3 bg-muted/50">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="text-xs text-muted-foreground space-y-1">
+                                      <div>📍 {detectedLocation.lat.toFixed(6)}, {detectedLocation.lng.toFixed(6)}</div>
+                                    </div>
+                                  </div>
+                                  <a
+                                    href={`https://www.openstreetmap.org/?mlat=${detectedLocation.lat}&mlon=${detectedLocation.lng}&zoom=16`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                    View on OSM
+                                  </a>
+                                </div>
+                              </div>
+                              
+                              {/* Embedded Map */}
+                              <div className="h-64 bg-gray-100">
+                                <iframe
+                                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${detectedLocation.lng-0.01},${detectedLocation.lat-0.01},${detectedLocation.lng+0.01},${detectedLocation.lat+0.01}&layer=mapnik&marker=${detectedLocation.lat},${detectedLocation.lng}`}
+                                  className="w-full h-full border-0"
+                                  loading="lazy"
+                                />
+                              </div>
                             </div>
                           </div>
                         )}
