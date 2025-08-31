@@ -1,8 +1,11 @@
-import base64
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent))
 
 import cv2
+import base64
 import numpy as np
-import uvicorn
+
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,6 +20,7 @@ from services.inferred_cues.inferred_cues_orchestrator import InferredCueOrchest
 from services.inferred_cues.llm_geoguesser import LLMGeoGuesser
 from services.models import MaskImage
 from services.settings import Settings
+
 
 app = FastAPI()
 
@@ -89,11 +93,6 @@ def mask_image(mask_image: MaskImage):
 
     return {"masked_img": base64.b64encode(pixelated_bgr).decode("utf-8")}
 
-
 @app.get("/api/health")
 def get_model_status():
     return Response(status_code=200)
-
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8000)

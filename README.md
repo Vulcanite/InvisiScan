@@ -145,21 +145,32 @@ typing-extensions==4.15.0
 
 ---
 
-## 📦 Installation
+## 📦 Project Setup (Linux Environment)
+
 
 ```bash
-git clone <repo-url> genai-location-privacy
-cd genai-location-privacy
+git clone https://github.com/Vulcanite/InvisiScan
+
+# Visual Cues Feature Setup
+cd InvisiScan/api
 python -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# spaCy models
-python -m spacy download en_core_web_sm
-python -m spacy download en_core_web_trf  # optional
+mkdir -p GroundingDINO/weights && curl -sL https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth -o GroundingDINO/weights/groundingdino_swint_ogc.pth
 
-# Place GroundingDINO config + weights under services/GroundingDINO/
+# PII Detection Feature Setup
+
+## spaCy models
+python -m spacy download en_core_web_sm
+python -m spacy download en_core_web_trf
+
+# Frontend Setup
+
+cd ..
+npm install
+npm run dev
 ```
 
 Set environment variables:

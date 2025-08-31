@@ -40,7 +40,7 @@ google-genai==1.32.0
 greenlet==3.2.4
 griffe==1.13.0
 groq==0.31.0
-groundingdino @ git+https://github.com/IDEA-Research/GroundingDINO.git@856dde20aee659246248e20734ef9ba5214f5e44
+groundingdino-py==0.4.0
 h11==0.16.0
 hf-xet==1.1.9
 httpcore==1.0.9

@@ -188,7 +188,7 @@ export default function DataScanPage() {
       const formData = new FormData()
       formData.append("text_input", textInput.trim())
 
-      const response = await fetch("http://192.168.0.19:8000/api/scan/text", {
+      const response = await fetch("http://localhost:8000/api/scan/text", {
         method: "POST",
         body: formData,
       })
@@ -309,7 +309,7 @@ export default function DataScanPage() {
       const formData = new FormData()
       formData.append("image", imageFile, imageFile.name)
 
-      const response = await fetch("http://192.168.0.19:8000/api/scan/image", {
+      const response = await fetch("http://localhost:8000/api/scan/image", {
         method: "POST",
         body: formData,
       })
@@ -401,7 +401,7 @@ export default function DataScanPage() {
     }
 
     try {
-      const response = await fetch("http://192.168.0.19:8000/api/mask/image", {
+      const response = await fetch("http://localhost:8000/api/mask/image", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -442,7 +442,7 @@ export default function DataScanPage() {
       <div className="flex-1 p-4">
         <div className="max-w-6xl mx-auto mt-8">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-foreground mb-2">Privacy First!</h1>
+            <h1 className="text-4xl font-bold text-foreground mb-2">InvisiScan</h1>
             <p className="text-lg text-muted-foreground">Safeguard your privacy with AI-powered detection and masking.</p>
           </div>
           

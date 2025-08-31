@@ -4,7 +4,6 @@ from typing import Optional
 import torch
 from pydantic import BaseModel, Field
 
-
 class Location(BaseModel):
     country: str
     city: str
